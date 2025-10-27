@@ -1,0 +1,80 @@
+.historial {
+  padding: 20px;
+  color: white;
+  background-color: #1e1e1e;
+  min-height: 30vh;
+}
+
+.historial h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.imagenes {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  background-color: #2a2a2a;
+  padding: 60px;
+  border-radius: 10px;
+  color: white;
+  box-shadow: 0 0 10px #000;
+}
+
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  width: 90%;
+  background-color: #2a2a2a;
+  padding: 15px;
+  border-radius: 10px;
+  color: white;
+}
+
+.info {
+  display: flex;
+  gap: 15px;
+}
+
+.info img {
+  width: 100px;
+  height: 70px;
+  border-radius: 5px;
+}
+
+.detalle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: right;
+}
+
+.vermas {
+  color: red;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.boton {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.boton button {
+  background-color: deepskyblue;
+  color: black;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}

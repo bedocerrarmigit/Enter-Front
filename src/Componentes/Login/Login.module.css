@@ -1,0 +1,48 @@
+.contenedor {
+  background-color: #1e1e1e;
+  color: white;
+  height: 76.5vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.loginBox {
+  background-color: #11161c;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 0 10px #000;
+  width: 300px;
+  text-align: center;
+}
+
+.loginBox h2 {
+  margin-bottom: 20px;
+}
+
+form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button[type="submit"] {
+  padding: 10px;
+  background-color: #0a84ff;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.registro {
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.registro a {
+  color: #0a84ff;
+  text-decoration: none;
+}

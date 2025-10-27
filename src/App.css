@@ -1,0 +1,17 @@
+*{
+  margin: 0;
+  color: white;
+  text-decoration: none;
+}
+body {
+  background-color: #1e1e1e;
+}
+.appContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; 
+}
+
+.mainContent {
+  flex: 1; 
+}

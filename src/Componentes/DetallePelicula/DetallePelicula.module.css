@@ -1,0 +1,83 @@
+.contenedor {
+  margin: auto;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  background-color: #333; 
+  padding: 20px;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-radius: 20px;
+  
+}
+
+.titulo{
+  color: black;
+}
+
+.seccionSuperior {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.imagen {
+  width: 120px;
+  height: 120px;
+  background-color: black;
+  flex-shrink: 0;
+}
+
+.tituloSinopsis {
+  flex: 1;
+}
+
+.sinopsis {
+  background-color: #999;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.puntuacion {
+  background-color: yellow;
+  width: fit-content;
+  padding: 5px 10px;
+  font-weight: bold;
+  color: black;
+}
+
+.seccionInferior {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.descripcion {
+  background-color: #999;
+  flex: 1;
+  min-width: 150px;
+  min-height: 200px;
+  padding: 10px;
+  border-radius: 5px;
+
+}
+
+.trailer {
+  background-color: green;
+  flex: 2;
+  min-width: 300px;
+  min-height: 200px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.comentarios {
+  background-color: #1d0f36;
+  flex: 1 1 100%;
+  padding: 40px;
+  border-radius: 8px;
+  color: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+

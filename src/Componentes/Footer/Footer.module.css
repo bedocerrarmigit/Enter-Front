@@ -1,0 +1,50 @@
+.footer {
+  background-color: #111;
+  color: white;
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.socialIcons {
+  margin-bottom: 20px;
+}
+
+.socialIcons svg {
+  font-size: 24px;
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+.footerLinks {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.footerLinks li {
+  cursor: pointer;
+}
+
+.copy {
+  font-size: 14px;
+  color: #aaa;
+}
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.appContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; 
+}
+
+.mainContent {
+  flex: 1; 
+}
