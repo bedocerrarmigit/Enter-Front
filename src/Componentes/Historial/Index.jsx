@@ -2,23 +2,35 @@ import React, { useMemo, useState } from "react";
 import style from "./Historial.module.css";
 import { Link } from "react-router-dom";
 
-// 🔹 Datos de ejemplo (puedes traerlos desde tu API)
+
 const datosFicticios = [
   { id: 1, titulo: "a", sinopsis: "a", fecha: "01/07/2025", tipo: "Película", cover: "" },
   { id: 2, titulo: "b", sinopsis: "b", fecha: "30/06/2025", tipo: "Serie", cover: "" },
   { id: 3, titulo: "b", sinopsis: "b", fecha: "29/06/2025", tipo: "Anime", cover: "" },
 ];
 
-// Util: parsea dd/mm/yyyy -> Date
+
 const parseFecha = (f) => {
   const [d, m, y] = f.split("/").map(Number);
   return new Date(y, m - 1, d);
 };
 
+
+const TIPOS = [
+  { value: "all",       label: "Todos" },
+  { value: "pelicula",  label: "Película" },
+  { value: "serie",     label: "Serie" },
+  { value: "anime",     label: "Anime" },
+];
+
+
+const toKey = (s = "") =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 function Historial() {
   const [q, setQ] = useState("");
-  const [orden, setOrden] = useState("reciente"); // reciente | antiguo | alfa
-  const [tipo, setTipo] = useState("todo"); // todo | Película | Serie | Anime
+  const [orden, setOrden] = useState("reciente"); 
+  const [tipo, setTipo] = useState("all");        
 
   const filtrados = useMemo(() => {
     let res = [...datosFicticios];
@@ -33,10 +45,11 @@ function Historial() {
       );
     }
 
+    if (tipo !== "all") {
+      res = res.filter((x) => toKey(x.tipo) === tipo);
+    }
 
-    if (tipo !== "todo") res = res.filter((x) => x.tipo === tipo);
-
-
+    // orden
     if (orden === "reciente") {
       res.sort((a, b) => parseFecha(b.fecha) - parseFecha(a.fecha));
     } else if (orden === "antiguo") {
@@ -61,27 +74,29 @@ function Historial() {
             onChange={(e) => setQ(e.target.value)}
           />
 
+
           <div className={style.pills}>
-            {["Todos", "Película", "Serie", "Anime"].map((t) => (
+            {TIPOS.map((opt) => (
               <button
-                key={t}
-                className={`${style.pill} ${tipo === t ? style.pillActive : ""}`}
-                onClick={() => setTipo(t)}
-                aria-pressed={tipo === t}
+                key={opt.value}
+                className={`${style.pill} ${tipo === opt.value ? style.pillActive : ""}`}
+                onClick={() => setTipo(opt.value)}
+                aria-pressed={tipo === opt.value}
               >
-                {t}
+                {opt.label}
               </button>
             ))}
           </div>
+
 
           <select
             className={style.select}
             value={orden}
             onChange={(e) => setOrden(e.target.value)}
           >
-            <option value="Reciente">Más recientes</option>
-            <option value="Antiguo">Más antiguos</option>
-            <option value="Alfa">A–Z</option>
+            <option value="reciente">Más recientes</option>
+            <option value="antiguo">Más antiguos</option>
+            <option value="alfa">A–Z</option>
           </select>
         </div>
       </header>
@@ -90,7 +105,6 @@ function Historial() {
         {filtrados.map((item) => (
           <article key={item.id} className={style.card}>
             <div className={style.thumb} aria-hidden>
-
               <div className={style.placeholderIcon}>🎬</div>
             </div>
 
