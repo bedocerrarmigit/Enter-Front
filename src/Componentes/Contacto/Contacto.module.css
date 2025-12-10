@@ -145,7 +145,7 @@ textarea{ resize: vertical; min-height: 140px; }
   .contactGrid{ grid-template-columns: 1fr; }
   .formWrap{ padding-left: 24px; }
   .accent{ width: 68px; }
-  .description, .form{ padding-left: 78px; }
+  .description, .form{ padding-left: 79px; }
 }
 @media (max-width: 560px){
   .accent{ display:none; }
