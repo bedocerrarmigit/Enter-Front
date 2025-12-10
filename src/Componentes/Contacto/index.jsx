@@ -58,8 +58,8 @@ const Contacto = () => {
 
             <label htmlFor="correo">Correo electrónico</label>
             <input
-              type="email"
-              id="correo"
+              type="Email"
+              id="Correo"
               placeholder="[Escribe tu correo electrónico]"
               required
             />
