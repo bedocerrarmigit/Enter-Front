@@ -16,6 +16,18 @@ import Guia_uso from "./Paginas/P_Guia_de_uso";
 import DetallePelicula from "./Componentes/DetallePelicula";
 import Formulario from "./paginas/P_Formulario";
 import Membresia from "./Paginas/P_Membresia";
+import AdminPeliculas from "./Componentes/adminPeliculas";
+import AdminCities from "./Componentes/adminCities";
+import AdminDepartaments from "./Componentes/adminDepartaments";
+import AdminDocumentTypes from "./Componentes/adminDocumentTypes";
+import AdminActors from "./Componentes/adminActors";
+import AdminSex from "./Componentes/adminSex";
+import AdminMembreships from "./Componentes/adminMembreships";
+import AdminFilmGenres from "./Componentes/adminFilmGenres";
+
+
+
+
 
 
 function App() {
@@ -37,6 +49,14 @@ function App() {
           <Route path="/membresia" element={<Membresia />} />
           <Route path="/detalle-pelicula" element={<DetallePelicula />} />
           <Route path="/formulario" element={<Formulario />} />
+          <Route path="/admin/peliculas" element={<AdminPeliculas />} />
+          <Route path="/admin/ciudades" element={<AdminCities />} />
+          <Route path="admin/Departamentos" element={<AdminDepartaments />} />
+          <Route path="admin/DocumentTypes" element={<AdminDocumentTypes />} />
+          <Route path="admin/adminActors" element={<AdminActors />} />
+          <Route path="admin/adminSex" element={<AdminSex />} />
+          <Route path="admin/adminMembreships" element={<AdminMembreships />} />
+          <Route path="admin/adminFilmGenres" element={<AdminFilmGenres />} />
         </Routes>
       </main>
       <Footer />
