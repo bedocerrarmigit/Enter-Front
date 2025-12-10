@@ -10,7 +10,6 @@ function Inicio() {
   const guiaClick = () => navegar("/guia-de-uso");
   const irAHistorial = () => navegar("/historial");
 
-  // SLIDES (los que ya tienes)
   const slides = [
     {
       id: "s1",
