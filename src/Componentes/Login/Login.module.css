@@ -1,11 +1,10 @@
-.contenedor {
+.contenedorLogin {
   background-color: #1e1e1e;
   color: white;
-  height: 76.5vh;
+  min-height: 76.5vh;         
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
 }
 
 .loginBox {
@@ -23,8 +22,16 @@
 
 form {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;   
+  gap: 10px;
+}
+
+input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #121212;
+  color: white;
 }
 
 button[type="submit"] {
@@ -35,6 +42,7 @@ button[type="submit"] {
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  margin-top: 10px;
 }
 
 .registro {
