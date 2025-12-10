@@ -9,6 +9,7 @@
 .logo {
   height: 40px;
   width: auto;
+  cursor: pointer; 
 }
 
 .contenedor_a {
@@ -18,10 +19,73 @@
 
 .a {
   text-decoration: none;
-    color: white;
-    font-size:larger;
+  color: white;
+  font-size: 16px;
 }
 
 .a:hover {
   color: #ffd700;
+}
+
+.mainLink {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.botonCerrarSesion {
+  display: inline-block;
+  background: linear-gradient(to right, #ff00ff, #ff7b00);
+  border: none;
+  color: white;
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.botonCerrarSesion:hover {
+  opacity: 0.9;
+}
+
+
+.dropdownAdmin {
+  position: relative;
+}
+
+.dropdownToggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #1e1e1e;
+  min-width: 200px;
+  padding: 10px 0;
+  display: none;            
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.dropdownItem {
+  padding: 8px 16px;
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.dropdownItem:hover {
+  background-color: #333;
+}
+
+.dropdownAdmin:hover .dropdownMenu {
+  display: flex;
 }
