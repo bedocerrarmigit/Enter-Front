@@ -1,0 +1,100 @@
+.contenedor {
+  padding: 2rem;
+  color: #ffffff;
+}
+
+.titulo {
+  margin-bottom: 1rem;
+}
+
+.error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #ff4d4f;
+  border-radius: 8px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1.3fr;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.card {
+  background: #141414;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid #333333;
+}
+
+.cardLista {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.th,
+.td {
+  border-bottom: 1px solid #333333;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.boton {
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+}
+
+.botonNuevo {
+    background: #0a84ff;
+    color: #ffffff;
+}
+
+.botonEditar {
+  margin-right: 0.5rem;
+}
+
+.botonEliminar {
+    background: #ff4d4f;
+    color: #ffffff;
+}
+
+.textarea {
+  width: 100%;
+  resize: vertical;
+  background: #0b0b0b;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid #333333;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.botonSubmit {
+  margin-top: 0.75rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1.5rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+.descripcion {
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
