@@ -1,4 +1,3 @@
-/*Contenedor*/
 .wrap{
   max-width: 1000px;
   margin: 40px auto;
@@ -59,7 +58,6 @@
 .nodeText{ font-weight: 700; white-space: nowrap; }
 .arrow{ opacity: .6; margin: 0 2px; }
 
-/* ====== Grid de contenido ====== */
 .grid{
   display: grid;
   grid-template-columns: repeat(2, minmax(0,1fr));
@@ -70,7 +68,6 @@
   .grid{ grid-template-columns: 1fr; }
 }
 
-/* Tarjetas */
 .card{
   background: #11161c;
   border: 1px solid rgba(255,255,255,.08);
@@ -87,7 +84,6 @@
   border-bottom: 2px solid #ff3b3b;
 }
 
-/* Lista clara y limpia */
 .list{ list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .item{
   display: grid;
