@@ -5,31 +5,56 @@ import {
   createAudiovisualContent,
   updateAudiovisualContent,
   deleteAudiovisualContent,
-} from "../../Servicios/audiovisualContent";  
+} from "../../Servicios/audiovisualContent";
 import styles from "./AdminPeliculas.module.css";
+
+const emptyForm = {
+  id: null,
+  title: "",
+  synopsis: "",
+  duration: "",
+  releaseDate: "",
+  extraJson: "{}",
+};
+
+function getTitle(item) {
+  const t =
+    item?.title ??
+    item?.tittle ??
+    item?.name ??
+    item?.nombre ??
+    item?.titulo ??
+    item?.movieTitle ??
+    "";
+  const s = String(t ?? "").trim();
+  return s ? s : "(sin título)";
+}
+
+function safeParseJson(text) {
+  if (!text || !String(text).trim()) return {};
+  return JSON.parse(text);
+}
 
 const AdminPeliculas = () => {
   const [contenidos, setContenidos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jsonText, setJsonText] = useState("{}");
+
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  // Admin verificacion
+  // Admin
   const savedUser = localStorage.getItem("user");
   const user = savedUser ? JSON.parse(savedUser) : null;
-  const isAdmin =
-    user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
+  const isAdmin = user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
 
-  if (!user || !isAdmin) {
-    return <Navigate to="/inicio" replace />;
-  }
+  if (!user || !isAdmin) return <Navigate to="/inicio" replace />;
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
       const data = await getAllAudiovisualContent();
-      setContenidos(data || []);
+      setContenidos(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error cargando audiovisuales", e);
       setError("No se pudieron cargar los registros.");
@@ -42,16 +67,28 @@ const AdminPeliculas = () => {
     cargarDatos();
   }, []);
 
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleNuevo = () => {
     setEditingId(null);
-    setJsonText("{}");
+    setFormData(emptyForm);
     setError("");
   };
 
   const handleEditar = (item) => {
     setEditingId(item.id);
-    setJsonText(JSON.stringify(item, null, 2));
     setError("");
+
+    setFormData({
+      id: item.id ?? null,
+      title: getTitle(item) === "(sin título)" ? "" : getTitle(item),
+      synopsis: item.synopsis ?? item.description ?? item.sinopsis ?? "",
+      duration: item.duration ?? item.runtime ?? "",
+      releaseDate: item.releaseDate ?? item.premiereDate ?? item.date ?? "",
+      extraJson: "{}", 
+    });
   };
 
   const handleEliminar = async (id) => {
@@ -59,6 +96,7 @@ const AdminPeliculas = () => {
 
     try {
       await deleteAudiovisualContent(id);
+      if (editingId === id) handleNuevo();
       await cargarDatos();
     } catch (e) {
       console.error("Error al eliminar", e);
@@ -70,27 +108,44 @@ const AdminPeliculas = () => {
     e.preventDefault();
     setError("");
 
-    let body;
-    try {
-      body = JSON.parse(jsonText);
-    } catch (e) {
-      setError("El JSON no es válido.");
+    const titleTrim = String(formData.title ?? "").trim();
+    if (!titleTrim) {
+      setError("El campo 'title' es obligatorio.");
       return;
     }
 
+    let extra = {};
     try {
-      if (editingId) {
-        await updateAudiovisualContent(editingId, body);
-      } else {
-        await createAudiovisualContent(body);
-      }
+      extra = safeParseJson(formData.extraJson);
+    } catch (err) {
+      setError("El JSON extra no es válido.");
+      return;
+    }
+
+    // payload base
+    const payload = {
+      id: editingId ? Number(editingId) : null,
+      title: titleTrim,
+      synopsis: String(formData.synopsis ?? "").trim() || null,
+      duration: formData.duration !== "" ? Number(formData.duration) : null,
+      releaseDate: formData.releaseDate || null,
+      ...extra,
+    };
+
+
+    if (!("tittle" in payload)) {
+      payload.tittle = payload.title;
+    }
+
+    try {
+      if (editingId) await updateAudiovisualContent(editingId, payload);
+      else await createAudiovisualContent(payload);
+
       await cargarDatos();
       handleNuevo();
     } catch (e) {
       console.error("Error al guardar", e);
-      setError(
-        "No se pudo guardar. Revisa el JSON y que coincida con AudiovisualContentDTO."
-      );
+      setError("No se pudo guardar. Revisa los campos y/o el JSON extra.");
     }
   };
 
@@ -108,6 +163,7 @@ const AdminPeliculas = () => {
             <button
               onClick={handleNuevo}
               className={`${styles.boton} ${styles.botonNuevo}`}
+              type="button"
             >
               Nuevo
             </button>
@@ -122,7 +178,7 @@ const AdminPeliculas = () => {
               <thead>
                 <tr>
                   <th className={styles.th}>ID</th>
-                  <th className={styles.th}>Título / Nombre</th>
+                  <th className={styles.th}>Título</th>
                   <th className={styles.th}>Acciones</th>
                 </tr>
               </thead>
@@ -130,23 +186,19 @@ const AdminPeliculas = () => {
                 {contenidos.map((item) => (
                   <tr key={item.id}>
                     <td className={styles.td}>{item.id}</td>
-                    <td className={styles.td}>
-                      {item.title ||
-                        item.tittle ||
-                        item.nombre ||
-                        item.name ||
-                        "(sin campo título configurado)"}
-                    </td>
+                    <td className={styles.td}>{getTitle(item)}</td>
                     <td className={styles.td}>
                       <button
                         onClick={() => handleEditar(item)}
                         className={`${styles.boton} ${styles.botonEditar}`}
+                        type="button"
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => handleEliminar(item.id)}
                         className={`${styles.boton} ${styles.botonEliminar}`}
+                        type="button"
                       >
                         Eliminar
                       </button>
@@ -158,22 +210,58 @@ const AdminPeliculas = () => {
           )}
         </div>
 
-        {/* FORMULARIO JSON */}
+        {/* FORM */}
         <div className={styles.card}>
           <h2>{editingId ? `Editar ID ${editingId}` : "Crear nuevo"}</h2>
-          <p className={styles.descripcion}>
-            Escribe el objeto JSON que coincida con tu{" "}
-            <b>AudiovisualContentDTO</b>. Ejemplo:
-            {" { \"title\": \"Pelicula X\", ... }"}
-          </p>
 
           <form onSubmit={handleSubmit}>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              rows={18}
-              className={styles.textarea}
-            />
+            <label className={styles.formField}>
+              <span>title *</span>
+              <input
+                value={formData.title}
+                onChange={(e) => handleChange("title", e.target.value)}
+                placeholder="Titanic"
+              />
+            </label>
+
+            <label className={styles.formField}>
+              <span>synopsis</span>
+              <input
+                value={formData.synopsis}
+                onChange={(e) => handleChange("synopsis", e.target.value)}
+                placeholder="Descripción corta"
+              />
+            </label>
+
+            <label className={styles.formField}>
+              <span>duration (min)</span>
+              <input
+                type="number"
+                value={formData.duration}
+                onChange={(e) => handleChange("duration", e.target.value)}
+                placeholder="180"
+              />
+            </label>
+
+            <label className={styles.formField}>
+              <span>releaseDate</span>
+              <input
+                type="date"
+                value={formData.releaseDate}
+                onChange={(e) => handleChange("releaseDate", e.target.value)}
+              />
+            </label>
+
+            <label className={styles.formField}>
+              <span>JSON extra (opcional)</span>
+              <textarea
+                value={formData.extraJson}
+                onChange={(e) => handleChange("extraJson", e.target.value)}
+                rows={6}
+                className={styles.textarea}
+                placeholder='{ "rating": 5, "language": "es" }'
+              />
+            </label>
 
             <button
               type="submit"

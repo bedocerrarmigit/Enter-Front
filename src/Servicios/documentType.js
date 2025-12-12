@@ -1,24 +1,25 @@
 import api from "./api";
 
-// GET: /api/document-types/findAll
+// GET:
 export async function getAllDocumentTypes() {
   const res = await api.get("/document-types/findAll");
   return res.data;
 }
 
-// POST: /api/document-types/create
+// POST:
 export async function createDocumentType(data) {
   const res = await api.post("/document-types/create", data);
   return res.data;
 }
 
-// PUT: /api/document-types/update
+// PUT:
 export async function updateDocumentType(data) {
   const res = await api.put("/document-types/update", data);
   return res.data;
 }
 
-// DELETE: /api/document-types/delete/{id}
+// DELETE:
 export async function deleteDocumentType(id) {
   await api.delete(`/document-types/delete/${id}`);
 }
+

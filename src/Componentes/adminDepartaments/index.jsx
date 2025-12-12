@@ -6,20 +6,45 @@ import {
   updateDepartament,
   deleteDepartament,
 } from "../../Servicios/departament";
+
 import styles from "../adminPeliculas/AdminPeliculas.module.css";
+
+const emptyForm = {
+  id: null,
+  name: "",
+  extraJson: "{}",
+};
+
+function getDepartamentName(item) {
+  const t =
+    item?.name ??
+    item?.departamentName ??
+    item?.departmentName ??
+    item?.departamentoNombre ??
+    item?.nombre ??
+    item?.departament_name ??
+    item?.department_name ??
+    "";
+  const s = String(t ?? "").trim();
+  return s ? s : "(sin nombre)";
+}
+
+function safeParseJson(text) {
+  if (!text || !String(text).trim()) return {};
+  return JSON.parse(text);
+}
 
 const AdminDepartaments = () => {
   const [departaments, setDepartaments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jsonText, setJsonText] = useState("{}");
+
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  // validar ADMIN
   const savedUser = localStorage.getItem("user");
   const user = savedUser ? JSON.parse(savedUser) : null;
-  const isAdmin =
-    user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
+  const isAdmin = user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
 
   if (!user || !isAdmin) {
     return <Navigate to="/inicio" replace />;
@@ -29,7 +54,7 @@ const AdminDepartaments = () => {
     try {
       setLoading(true);
       const data = await getAllDepartaments();
-      setDepartaments(data || []);
+      setDepartaments(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error cargando departamentos", e);
       setError("No se pudieron cargar los departamentos.");
@@ -42,24 +67,34 @@ const AdminDepartaments = () => {
     cargarDatos();
   }, []);
 
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleNuevo = () => {
     setEditingId(null);
-    setJsonText("{}");
+    setFormData(emptyForm);
     setError("");
   };
 
   const handleEditar = (item) => {
     setEditingId(item.id);
-    setJsonText(JSON.stringify(item, null, 2));
     setError("");
+
+    const shown = getDepartamentName(item);
+    setFormData({
+      id: item.id ?? null,
+      name: shown === "(sin nombre)" ? "" : shown,
+      extraJson: "{}",
+    });
   };
 
   const handleEliminar = async (id) => {
-    if (!window.confirm("¿Seguro que quieres eliminar este departamento?"))
-      return;
+    if (!window.confirm("¿Seguro que quieres eliminar este departamento?")) return;
 
     try {
       await deleteDepartament(id);
+      if (editingId === id) handleNuevo();
       await cargarDatos();
     } catch (e) {
       console.error("Error al eliminar", e);
@@ -71,27 +106,39 @@ const AdminDepartaments = () => {
     e.preventDefault();
     setError("");
 
-    let body;
-    try {
-      body = JSON.parse(jsonText);
-    } catch (e) {
-      setError("El JSON no es válido.");
+    const nameTrim = String(formData.name ?? "").trim();
+    if (!nameTrim) {
+      setError("El campo 'name' es obligatorio.");
       return;
     }
 
+    let extra = {};
     try {
-      if (editingId) {
-        await updateDepartament(editingId, body);
-      } else {
-        await createDepartament(body);
-      }
+      extra = safeParseJson(formData.extraJson);
+    } catch (err) {
+      setError("El JSON extra no es válido.");
+      return;
+    }
+
+    const payload = {
+      id: editingId ? Number(editingId) : null,
+      name: nameTrim,
+      ...extra,
+    };
+
+    if (!("departamentName" in payload)) payload.departi = undefined;
+    if (!("departamentName" in payload)) payload.departamentName = payload.name;
+    if (!("nombre" in payload)) payload.nombre = payload.name;
+
+    try {
+      if (editingId) await updateDepartament(editingId, payload);
+      else await createDepartament(payload);
+
       await cargarDatos();
       handleNuevo();
     } catch (e) {
       console.error("Error al guardar", e);
-      setError(
-        "No se pudo guardar. Revisa el JSON y que coincida con DepartamentDTO."
-      );
+      setError("No se pudo guardar. Revisa los campos y/o el JSON extra.");
     }
   };
 
@@ -102,11 +149,11 @@ const AdminDepartaments = () => {
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.grid}>
-        {/* LISTADO */}
         <div className={`${styles.card} ${styles.cardLista}`}>
           <div className={styles.cardHeader}>
             <h2>Registros</h2>
             <button
+              type="button"
               onClick={handleNuevo}
               className={`${styles.boton} ${styles.botonNuevo}`}
             >
@@ -131,20 +178,17 @@ const AdminDepartaments = () => {
                 {departaments.map((item) => (
                   <tr key={item.id}>
                     <td className={styles.td}>{item.id}</td>
-                    <td className={styles.td}>
-                      {item.name ||
-                        item.departamentName ||
-                        item.nombre ||
-                        "(sin nombre configurado)"}
-                    </td>
+                    <td className={styles.td}>{getDepartamentName(item)}</td>
                     <td className={styles.td}>
                       <button
+                        type="button"
                         onClick={() => handleEditar(item)}
                         className={`${styles.boton} ${styles.botonEditar}`}
                       >
                         Editar
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleEliminar(item.id)}
                         className={`${styles.boton} ${styles.botonEliminar}`}
                       >
@@ -158,26 +202,31 @@ const AdminDepartaments = () => {
           )}
         </div>
 
-        {/* FORM JSON */}
         <div className={styles.card}>
           <h2>{editingId ? `Editar ID ${editingId}` : "Crear nuevo"}</h2>
-          <p className={styles.descripcion}>
-            Escribe el objeto JSON que coincida con tu <b>DepartamentDTO</b>.
-            Revisa los campos exactos en Swagger (`/api/departaments`).
-          </p>
 
           <form onSubmit={handleSubmit}>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              rows={18}
-              className={styles.textarea}
-            />
+            <label className={styles.formField}>
+              <span>name *</span>
+              <input
+                value={formData.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="Cundinamarca"
+              />
+            </label>
 
-            <button
-              type="submit"
-              className={`${styles.boton} ${styles.botonSubmit}`}
-            >
+            <label className={styles.formField}>
+              <span>JSON extra (opcional)</span>
+              <textarea
+                value={formData.extraJson}
+                onChange={(e) => handleChange("extraJson", e.target.value)}
+                rows={8}
+                className={styles.textarea}
+                placeholder='{ "stateDepartament": true }'
+              />
+            </label>
+
+            <button type="submit" className={`${styles.boton} ${styles.botonSubmit}`}>
               {editingId ? "Guardar cambios" : "Crear registro"}
             </button>
           </form>

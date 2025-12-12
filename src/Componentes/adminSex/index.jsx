@@ -1,37 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import {
-  getAllSex,
-  createSex,
-  updateSex,
-  deleteSex,
-} from "../../Servicios/sex";
+import { getAllSex, createSex, updateSex, deleteSex } from "../../Servicios/sex";
 import styles from "../adminPeliculas/AdminPeliculas.module.css";
+
+const emptyForm = {
+  id: null,
+  sexName: "",
+  extraJson: "{}",
+};
 
 const AdminSex = () => {
   const [sexList, setSexList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jsonText, setJsonText] = useState("{}");
+
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  // validar ADMIN
   const savedUser = localStorage.getItem("user");
   const user = savedUser ? JSON.parse(savedUser) : null;
-  const isAdmin =
-    user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
-
-  if (!user || !isAdmin) {
-    return <Navigate to="/inicio" replace />;
-  }
+  const isAdmin = user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
+  if (!user || !isAdmin) return <Navigate to="/inicio" replace />;
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
       const data = await getAllSex();
-      setSexList(data || []);
+      setSexList(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error("Error cargando sexos", e);
+      console.error("Error cargando sex", e);
       setError("No se pudieron cargar los registros de Sex.");
     } finally {
       setLoading(false);
@@ -44,24 +41,32 @@ const AdminSex = () => {
 
   const handleNuevo = () => {
     setEditingId(null);
-    setJsonText("{}"); // aquí tú metes los campos según SexDTO (mira Swagger)
+    setFormData(emptyForm);
     setError("");
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleEditar = (item) => {
     setEditingId(item.id);
-    setJsonText(JSON.stringify(item, null, 2));
     setError("");
+    setFormData({
+      id: item.id ?? null,
+      sexName: item.sexName ?? "",
+      extraJson: "{}",
+    });
   };
 
   const handleEliminar = async (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este registro?")) return;
-
     try {
       await deleteSex(id);
+      if (editingId === id) handleNuevo();
       await cargarDatos();
     } catch (e) {
-      console.error("Error al eliminar", e);
+      console.error("Error eliminando sex", e);
       setError("No se pudo eliminar el registro.");
     }
   };
@@ -70,32 +75,43 @@ const AdminSex = () => {
     e.preventDefault();
     setError("");
 
-    let body;
-    try {
-      body = JSON.parse(jsonText);
-    } catch (e) {
-      setError("El JSON no es válido.");
+    if (!formData.sexName.trim()) {
+      setError("El campo 'sexName' es obligatorio.");
       return;
     }
 
+    let extra = {};
     try {
-      if (editingId) {
-        if (!body.id) {
-          body.id = editingId;
-        }
-        await updateSex(body);
-      } else {
-        await createSex(body);
-      }
+      extra = formData.extraJson?.trim() ? JSON.parse(formData.extraJson) : {};
+    } catch {
+      setError("El JSON extra no es válido.");
+      return;
+    }
+
+    const payload = {
+      id: editingId ? Number(editingId) : null,
+      sexName: formData.sexName.trim(),
+      ...extra,
+    };
+
+    try {
+      if (editingId) await updateSex(payload);
+      else await createSex(payload);
+
       await cargarDatos();
       handleNuevo();
-    } catch (e) {
-      console.error("Error al guardar", e);
-      setError(
-        "No se pudo guardar. Revisa el JSON y que coincida con SexDTO."
-      );
+    } catch (e2) {
+      console.error("Error guardando sex", e2);
+      const msg =
+        e2?.response?.data?.mensaje ||
+        e2?.response?.data?.message ||
+        (typeof e2?.response?.data === "string" ? e2.response.data : null) ||
+        "No se pudo guardar el registro.";
+      setError(msg);
     }
   };
+
+  const displayName = (item) => item?.sexName || "(sin nombre)";
 
   return (
     <div className={styles.contenedor}>
@@ -104,14 +120,10 @@ const AdminSex = () => {
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.grid}>
-        {/* LISTADO */}
         <div className={`${styles.card} ${styles.cardLista}`}>
           <div className={styles.cardHeader}>
             <h2>Registros</h2>
-            <button
-              onClick={handleNuevo}
-              className={`${styles.boton} ${styles.botonNuevo}`}
-            >
+            <button type="button" onClick={handleNuevo} className={`${styles.boton} ${styles.botonNuevo}`}>
               Nuevo
             </button>
           </div>
@@ -133,20 +145,17 @@ const AdminSex = () => {
                 {sexList.map((item) => (
                   <tr key={item.id}>
                     <td className={styles.td}>{item.id}</td>
-                    <td className={styles.td}>
-                      {item.name ||
-                        item.sexName ||
-                        item.description ||
-                        "(sin nombre configurado)"}
-                    </td>
+                    <td className={styles.td}>{displayName(item)}</td>
                     <td className={styles.td}>
                       <button
+                        type="button"
                         onClick={() => handleEditar(item)}
                         className={`${styles.boton} ${styles.botonEditar}`}
                       >
                         Editar
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleEliminar(item.id)}
                         className={`${styles.boton} ${styles.botonEliminar}`}
                       >
@@ -160,26 +169,31 @@ const AdminSex = () => {
           )}
         </div>
 
-        {/* FORM JSON */}
         <div className={styles.card}>
           <h2>{editingId ? `Editar ID ${editingId}` : "Crear nuevo"}</h2>
-          <p className={styles.descripcion}>
-            Escribe el objeto JSON que coincida con tu <b>SexDTO</b>.  
-            Revisa en Swagger (`/api/sex`) los nombres de los campos.
-          </p>
 
           <form onSubmit={handleSubmit}>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              rows={18}
-              className={styles.textarea}
-            />
+            <label className={styles.formField}>
+              <span>sexName *</span>
+              <input
+                value={formData.sexName}
+                onChange={(e) => handleChange("sexName", e.target.value)}
+                placeholder="Femenino"
+              />
+            </label>
 
-            <button
-              type="submit"
-              className={`${styles.boton} ${styles.botonSubmit}`}
-            >
+            <label className={styles.formField}>
+              <span>JSON extra (opcional)</span>
+              <textarea
+                value={formData.extraJson}
+                onChange={(e) => handleChange("extraJson", e.target.value)}
+                rows={8}
+                className={styles.textarea}
+                placeholder='{ "otraCosa": "..." }'
+              />
+            </label>
+
+            <button type="submit" className={`${styles.boton} ${styles.botonSubmit}`}>
               {editingId ? "Guardar cambios" : "Crear registro"}
             </button>
           </form>

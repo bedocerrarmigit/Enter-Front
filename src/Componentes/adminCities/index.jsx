@@ -9,18 +9,40 @@ import {
 
 import styles from "../adminPeliculas/AdminPeliculas.module.css";
 
+const emptyForm = {
+  id: null,
+  name: "",
+  extraJson: "{}",
+};
+
+function getCityName(item) {
+  const t =
+    item?.name ??
+    item?.cityName ??
+    item?.nombre ??
+    item?.city_name ??
+    item?.city ??
+    "";
+  const s = String(t ?? "").trim();
+  return s ? s : "(sin nombre)";
+}
+
+function safeParseJson(text) {
+  if (!text || !String(text).trim()) return {};
+  return JSON.parse(text);
+}
+
 const AdminCities = () => {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jsonText, setJsonText] = useState("{}");
+
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  //Validar admin
   const savedUser = localStorage.getItem("user");
   const user = savedUser ? JSON.parse(savedUser) : null;
-  const isAdmin =
-    user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
+  const isAdmin = user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
 
   if (!user || !isAdmin) {
     return <Navigate to="/inicio" replace />;
@@ -30,7 +52,7 @@ const AdminCities = () => {
     try {
       setLoading(true);
       const data = await getAllCities();
-      setCities(data || []);
+      setCities(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error cargando ciudades", e);
       setError("No se pudieron cargar las ciudades.");
@@ -43,16 +65,25 @@ const AdminCities = () => {
     cargarDatos();
   }, []);
 
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleNuevo = () => {
     setEditingId(null);
-    setJsonText("{}");
+    setFormData(emptyForm);
     setError("");
   };
 
   const handleEditar = (item) => {
     setEditingId(item.id);
-    setJsonText(JSON.stringify(item, null, 2));
     setError("");
+
+    setFormData({
+      id: item.id ?? null,
+      name: getCityName(item) === "(sin nombre)" ? "" : getCityName(item),
+      extraJson: "{}",
+    });
   };
 
   const handleEliminar = async (id) => {
@@ -60,6 +91,7 @@ const AdminCities = () => {
 
     try {
       await deleteCity(id);
+      if (editingId === id) handleNuevo();
       await cargarDatos();
     } catch (e) {
       console.error("Error al eliminar", e);
@@ -71,31 +103,41 @@ const AdminCities = () => {
     e.preventDefault();
     setError("");
 
-    let body;
-    try {
-      body = JSON.parse(jsonText);
-    } catch (e) {
-      setError("El JSON no es válido.");
+    const nameTrim = String(formData.name ?? "").trim();
+    if (!nameTrim) {
+      setError("El campo 'name' es obligatorio.");
       return;
     }
 
+    let extra = {};
     try {
-      if (editingId) {
-        await updateCity(editingId, body);
-      } else {
-        await createCity(body);
-      }
+      extra = safeParseJson(formData.extraJson);
+    } catch (err) {
+      setError("El JSON extra no es válido.");
+      return;
+    }
+
+    const payload = {
+      id: editingId ? Number(editingId) : null,
+      name: nameTrim,
+      ...extra,
+    };
+
+    if (!("cityName" in payload)) payload.cityName = payload.name;
+    if (!("nombre" in payload)) payload.nombre = payload.name;
+
+    try {
+      if (editingId) await updateCity(editingId, payload);
+      else await createCity(payload);
+
       await cargarDatos();
       handleNuevo();
     } catch (e) {
       console.error("Error al guardar", e);
-      setError(
-        "No se pudo guardar. Revisa el JSON y que coincida con CityDTO."
-      );
+      setError("No se pudo guardar. Revisa los campos y/o el JSON extra.");
     }
   };
 
-  // --------- UI ----------
   return (
     <div className={styles.contenedor}>
       <h1 className={styles.titulo}>Gestión de Ciudades</h1>
@@ -103,11 +145,11 @@ const AdminCities = () => {
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.grid}>
-        {/* LISTADO */}
         <div className={`${styles.card} ${styles.cardLista}`}>
           <div className={styles.cardHeader}>
             <h2>Registros</h2>
             <button
+              type="button"
               onClick={handleNuevo}
               className={`${styles.boton} ${styles.botonNuevo}`}
             >
@@ -132,20 +174,17 @@ const AdminCities = () => {
                 {cities.map((item) => (
                   <tr key={item.id}>
                     <td className={styles.td}>{item.id}</td>
-                    <td className={styles.td}>
-                      {item.name ||
-                        item.cityName ||
-                        item.nombre ||
-                        "(sin nombre configurado)"}
-                    </td>
+                    <td className={styles.td}>{getCityName(item)}</td>
                     <td className={styles.td}>
                       <button
+                        type="button"
                         onClick={() => handleEditar(item)}
                         className={`${styles.boton} ${styles.botonEditar}`}
                       >
                         Editar
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleEliminar(item.id)}
                         className={`${styles.boton} ${styles.botonEliminar}`}
                       >
@@ -159,21 +198,29 @@ const AdminCities = () => {
           )}
         </div>
 
-        {/* FORMULARIO JSON */}
         <div className={styles.card}>
           <h2>{editingId ? `Editar ID ${editingId}` : "Crear nuevo"}</h2>
-          <p className={styles.descripcion}>
-            Escribe el objeto JSON que coincida con tu <b>CityDTO</b>.  
-            Mira los campos exactos en Swagger (`/api/cities`).
-          </p>
 
           <form onSubmit={handleSubmit}>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              rows={18}
-              className={styles.textarea}
-            />
+            <label className={styles.formField}>
+              <span>name *</span>
+              <input
+                value={formData.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="Bogotá"
+              />
+            </label>
+
+            <label className={styles.formField}>
+              <span>JSON extra (opcional)</span>
+              <textarea
+                value={formData.extraJson}
+                onChange={(e) => handleChange("extraJson", e.target.value)}
+                rows={8}
+                className={styles.textarea}
+                placeholder='{ "department": { "id": 1 } }'
+              />
+            </label>
 
             <button
               type="submit"

@@ -1,35 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import {
-  getAllActors,
-  createActor,
-  updateActor,
-  deleteActor,
-} from "../../Servicios/actor";
+import { getAllActors, createActor, updateActor, deleteActor } from "../../Servicios/actor";
 import styles from "../adminPeliculas/AdminPeliculas.module.css";
+
+const emptyForm = {
+  id: null,
+  nameActor: "",
+  lastNameActor: "",
+  picture: null,
+  pictureContentType: null,
+};
 
 const AdminActors = () => {
   const [actors, setActors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jsonText, setJsonText] = useState("{}");
+
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  // validar ADMIN
   const savedUser = localStorage.getItem("user");
   const user = savedUser ? JSON.parse(savedUser) : null;
-  const isAdmin =
-    user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
-
-  if (!user || !isAdmin) {
-    return <Navigate to="/inicio" replace />;
-  }
+  const isAdmin = user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
+  if (!user || !isAdmin) return <Navigate to="/inicio" replace />;
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
       const data = await getAllActors();
-      setActors(data || []);
+      setActors(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error cargando actores", e);
       setError("No se pudieron cargar los actores.");
@@ -44,28 +43,31 @@ const AdminActors = () => {
 
   const handleNuevo = () => {
     setEditingId(null);
-    setJsonText(
-      `{
-  "nameActor": "",
-  "lastNameActor": "",
-  "picture": null,
-  "pictureContentType": null
-}`
-    );
+    setFormData(emptyForm);
     setError("");
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleEditar = (item) => {
     setEditingId(item.id);
-    setJsonText(JSON.stringify(item, null, 2));
     setError("");
+    setFormData({
+      id: item.id ?? null,
+      nameActor: item.nameActor ?? "",
+      lastNameActor: item.lastNameActor ?? "",
+      picture: item.picture ?? null,
+      pictureContentType: item.pictureContentType ?? null,
+    });
   };
 
   const handleEliminar = async (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este actor?")) return;
-
     try {
       await deleteActor(id);
+      if (editingId === id) handleNuevo();
       await cargarDatos();
     } catch (e) {
       console.error("Error al eliminar", e);
@@ -77,27 +79,40 @@ const AdminActors = () => {
     e.preventDefault();
     setError("");
 
-    let body;
-    try {
-      body = JSON.parse(jsonText);
-    } catch (e) {
-      setError("El JSON no es válido.");
+    const nameActor = formData.nameActor.trim();
+    const lastNameActor = formData.lastNameActor.trim();
+
+    if (!nameActor) {
+      setError("nameActor es obligatorio.");
+      return;
+    }
+    if (!lastNameActor) {
+      setError("lastNameActor es obligatorio.");
       return;
     }
 
+    const payload = {
+      id: editingId ? Number(editingId) : null,
+      nameActor,
+      lastNameActor,
+      picture: formData.picture ?? null,
+      pictureContentType: formData.pictureContentType ?? null,
+    };
+
     try {
-      if (editingId) {
-        await updateActor(editingId, body);
-      } else {
-        await createActor(body);
-      }
+      if (editingId) await updateActor(editingId, payload);
+      else await createActor(payload);
+
       await cargarDatos();
       handleNuevo();
     } catch (e) {
-      console.error("Error al guardar", e);
-      setError(
-        "No se pudo guardar. Revisa el JSON y que coincida con ActorDTO."
-      );
+      console.error("Error al guardar actor", e);
+      const msg =
+        e?.response?.data?.mensaje ||
+        e?.response?.data?.message ||
+        (typeof e?.response?.data === "string" ? e.response.data : null) ||
+        "No se pudo guardar el actor.";
+      setError(msg);
     }
   };
 
@@ -115,14 +130,10 @@ const AdminActors = () => {
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.grid}>
-        {/* LISTADO */}
         <div className={`${styles.card} ${styles.cardLista}`}>
           <div className={styles.cardHeader}>
             <h2>Registros</h2>
-            <button
-              onClick={handleNuevo}
-              className={`${styles.boton} ${styles.botonNuevo}`}
-            >
+            <button type="button" onClick={handleNuevo} className={`${styles.boton} ${styles.botonNuevo}`}>
               Nuevo
             </button>
           </div>
@@ -147,12 +158,14 @@ const AdminActors = () => {
                     <td className={styles.td}>{nombreCompleto(item)}</td>
                     <td className={styles.td}>
                       <button
+                        type="button"
                         onClick={() => handleEditar(item)}
                         className={`${styles.boton} ${styles.botonEditar}`}
                       >
                         Editar
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleEliminar(item.id)}
                         className={`${styles.boton} ${styles.botonEliminar}`}
                       >
@@ -166,28 +179,47 @@ const AdminActors = () => {
           )}
         </div>
 
-        {/* FORM JSON */}
         <div className={styles.card}>
           <h2>{editingId ? `Editar ID ${editingId}` : "Crear nuevo"}</h2>
-          <p className={styles.descripcion}>
-            Escribe el objeto JSON que coincida con tu <b>ActorDTO</b>.  
-            Ejemplo:
-          </p>
-          <pre className={styles.descripcion}>
-          </pre>
 
           <form onSubmit={handleSubmit}>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              rows={18}
-              className={styles.textarea}
-            />
+            <label className={styles.formField}>
+              <span>nameActor *</span>
+              <input
+                value={formData.nameActor}
+                onChange={(e) => handleChange("nameActor", e.target.value)}
+                placeholder="Leonardo"
+              />
+            </label>
 
-            <button
-              type="submit"
-              className={`${styles.boton} ${styles.botonSubmit}`}
-            >
+            <label className={styles.formField}>
+              <span>lastNameActor *</span>
+              <input
+                value={formData.lastNameActor}
+                onChange={(e) => handleChange("lastNameActor", e.target.value)}
+                placeholder="DiCaprio"
+              />
+            </label>
+
+            <label className={styles.formField}>
+              <span>pictureContentType</span>
+              <input
+                value={formData.pictureContentType ?? ""}
+                onChange={(e) => handleChange("pictureContentType", e.target.value || null)}
+                placeholder="image/png"
+              />
+            </label>
+
+            <label className={styles.formField}>
+              <span>picture</span>
+              <input
+                value={formData.picture ?? ""}
+                onChange={(e) => handleChange("picture", e.target.value || null)}
+                placeholder="base64 o null"
+              />
+            </label>
+
+            <button type="submit" className={`${styles.boton} ${styles.botonSubmit}`}>
               {editingId ? "Guardar cambios" : "Crear registro"}
             </button>
           </form>
