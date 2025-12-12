@@ -8,30 +8,33 @@ import {
 } from "../../Servicios/documentType";
 import styles from "../adminPeliculas/AdminPeliculas.module.css";
 
-const AdminDocumentTypes = () => {
+const emptyForm = {
+  id: null,
+  documentName: "",
+  initials: "",
+};
+
+export default function AdminDocumentTypes() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jsonText, setJsonText] = useState("{}");
+
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  // validar ADMIN
   const savedUser = localStorage.getItem("user");
   const user = savedUser ? JSON.parse(savedUser) : null;
-  const isAdmin =
-    user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
+  const isAdmin = user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
 
-  if (!user || !isAdmin) {
-    return <Navigate to="/inicio" replace />;
-  }
+  if (!user || !isAdmin) return <Navigate to="/inicio" replace />;
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
       const data = await getAllDocumentTypes();
-      setDocs(data || []);
+      setDocs(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error("Error cargando tipos de documento", e);
+      console.error("Error cargando document types", e);
       setError("No se pudieron cargar los tipos de documento.");
     } finally {
       setLoading(false);
@@ -44,25 +47,33 @@ const AdminDocumentTypes = () => {
 
   const handleNuevo = () => {
     setEditingId(null);
-    setJsonText("{}");
+    setFormData(emptyForm);
     setError("");
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleEditar = (item) => {
     setEditingId(item.id);
-    setJsonText(JSON.stringify(item, null, 2));
     setError("");
+    setFormData({
+      id: item.id ?? null,
+      documentName: item.documentName ?? "",
+      initials: item.initials ?? "",
+    });
   };
 
   const handleEliminar = async (id) => {
-    if (!window.confirm("¿Seguro que quieres eliminar este tipo de documento?"))
-      return;
+    if (!window.confirm("¿Seguro que quieres eliminar este tipo de documento?")) return;
 
     try {
       await deleteDocumentType(id);
+      if (editingId === id) handleNuevo();
       await cargarDatos();
     } catch (e) {
-      console.error("Error al eliminar", e);
+      console.error("Error eliminando document type", e);
       setError("No se pudo eliminar el tipo de documento.");
     }
   };
@@ -71,30 +82,44 @@ const AdminDocumentTypes = () => {
     e.preventDefault();
     setError("");
 
-    let body;
-    try {
-      body = JSON.parse(jsonText);
-    } catch (e) {
-      setError("El JSON no es válido.");
+    const documentName = formData.documentName.trim();
+    const initials = formData.initials.trim();
+
+    if (!documentName) {
+      setError("documentName es obligatorio.");
+      return;
+    }
+    if (!initials) {
+      setError("initials es obligatorio.");
+      return;
+    }
+    if (initials.length > 10) {
+      setError("initials no puede superar 10 caracteres.");
       return;
     }
 
+    const payload = {
+      id: editingId ? Number(editingId) : null,
+      documentName,
+      initials,
+    };
+
     try {
       if (editingId) {
-        if (!body.id) {
-          body.id = editingId;
-        }
-        await updateDocumentType(body);
+        await updateDocumentType(payload);
       } else {
-        await createDocumentType(body);
+        await createDocumentType(payload);
       }
       await cargarDatos();
       handleNuevo();
     } catch (e) {
-      console.error("Error al guardar", e);
-      setError(
-        "No se pudo guardar. Revisa el JSON y que coincida con DocumentTypeDTO."
-      );
+      console.error("Error guardando DocumentType:", e);
+      const msg =
+        e?.response?.data?.mensaje ||
+        e?.response?.data?.message ||
+        (typeof e?.response?.data === "string" ? e.response.data : null) ||
+        "El backend rechazó los datos.";
+      setError(msg);
     }
   };
 
@@ -105,13 +130,13 @@ const AdminDocumentTypes = () => {
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.grid}>
-        {/* LISTADO */}
         <div className={`${styles.card} ${styles.cardLista}`}>
           <div className={styles.cardHeader}>
             <h2>Registros</h2>
             <button
               onClick={handleNuevo}
               className={`${styles.boton} ${styles.botonNuevo}`}
+              type="button"
             >
               Nuevo
             </button>
@@ -126,6 +151,7 @@ const AdminDocumentTypes = () => {
               <thead>
                 <tr>
                   <th className={styles.th}>ID</th>
+                  <th className={styles.th}>Iniciales</th>
                   <th className={styles.th}>Nombre</th>
                   <th className={styles.th}>Acciones</th>
                 </tr>
@@ -134,22 +160,18 @@ const AdminDocumentTypes = () => {
                 {docs.map((item) => (
                   <tr key={item.id}>
                     <td className={styles.td}>{item.id}</td>
-                    <td className={styles.td}>
-                      {item.name ||
-                        item.documentName ||
-                        item.documentTypeName ||
-                        item.abbreviation ||
-                        item.code ||
-                        "(sin nombre configurado)"}
-                    </td>
+                    <td className={styles.td}>{item.initials ?? "-"}</td>
+                    <td className={styles.td}>{item.documentName ?? "-"}</td>
                     <td className={styles.td}>
                       <button
+                        type="button"
                         onClick={() => handleEditar(item)}
                         className={`${styles.boton} ${styles.botonEditar}`}
                       >
                         Editar
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleEliminar(item.id)}
                         className={`${styles.boton} ${styles.botonEliminar}`}
                       >
@@ -163,27 +185,30 @@ const AdminDocumentTypes = () => {
           )}
         </div>
 
-        {/* FORM JSON */}
         <div className={styles.card}>
           <h2>{editingId ? `Editar ID ${editingId}` : "Crear nuevo"}</h2>
-          <p className={styles.descripcion}>
-            Escribe el objeto JSON que coincida con tu{" "}
-            <b>DocumentTypeDTO</b>.  
-            Revisa en Swagger `/api/document-types` los nombres exactos.
-          </p>
 
           <form onSubmit={handleSubmit}>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              rows={18}
-              className={styles.textarea}
-            />
+            <label className={styles.formField}>
+              <span>documentName *</span>
+              <input
+                value={formData.documentName}
+                onChange={(e) => handleChange("documentName", e.target.value)}
+                placeholder="Cédula de ciudadanía"
+              />
+            </label>
 
-            <button
-              type="submit"
-              className={`${styles.boton} ${styles.botonSubmit}`}
-            >
+            <label className={styles.formField}>
+              <span>initials *</span>
+              <input
+                value={formData.initials}
+                onChange={(e) => handleChange("initials", e.target.value)}
+                placeholder="CC"
+                maxLength={10}
+              />
+            </label>
+
+            <button type="submit" className={`${styles.boton} ${styles.botonSubmit}`}>
               {editingId ? "Guardar cambios" : "Crear registro"}
             </button>
           </form>
@@ -191,6 +216,4 @@ const AdminDocumentTypes = () => {
       </div>
     </div>
   );
-};
-
-export default AdminDocumentTypes;
+}

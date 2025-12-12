@@ -9,27 +9,30 @@ import {
 import styles from "../adminPeliculas/AdminPeliculas.module.css";
 
 const AdminFilmGenres = () => {
-  const [genres, setGenres] = useState([]);
+  const [filmGenres, setFilmGenres] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [jsonText, setJsonText] = useState("{}");
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
-  // validar ADMIN
+  const [movieGenre, setMovieGenre] = useState("");
+
   const savedUser = localStorage.getItem("user");
   const user = savedUser ? JSON.parse(savedUser) : null;
-  const isAdmin =
-    user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
+  const isAdmin = user && (user.rol === "ADMIN" || user.rol === "ROLE_ADMIN");
 
-  if (!user || !isAdmin) {
-    return <Navigate to="/inicio" replace />;
-  }
+  if (!user || !isAdmin) return <Navigate to="/inicio" replace />;
+
+  const normalizeFilmGenre = (g) => {
+    const movieGenre =
+      g?.movieGenre ?? g?.movie_genre ?? g?.genre ?? g?.name ?? "";
+    return { ...g, movieGenre };
+  };
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
       const data = await getAllFilmGenres();
-      setGenres(data || []);
+      setFilmGenres((data || []).map(normalizeFilmGenre));
     } catch (e) {
       console.error("Error cargando géneros", e);
       setError("No se pudieron cargar los géneros.");
@@ -42,19 +45,20 @@ const AdminFilmGenres = () => {
     cargarDatos();
   }, []);
 
-  const handleNuevo = () => {
+  const resetForm = () => {
     setEditingId(null);
-    setJsonText(
-      `{
-  "movieGenre": ""
-}`
-    );
+    setMovieGenre("");
     setError("");
   };
 
+  const handleNuevo = () => {
+    resetForm();
+  };
+
   const handleEditar = (item) => {
-    setEditingId(item.id);
-    setJsonText(JSON.stringify(item, null, 2));
+    const g = normalizeFilmGenre(item);
+    setEditingId(g.id);
+    setMovieGenre(g.movieGenre || "");
     setError("");
   };
 
@@ -64,6 +68,7 @@ const AdminFilmGenres = () => {
     try {
       await deleteFilmGenre(id);
       await cargarDatos();
+      if (editingId === id) resetForm();
     } catch (e) {
       console.error("Error al eliminar", e);
       setError("No se pudo eliminar el género.");
@@ -74,41 +79,39 @@ const AdminFilmGenres = () => {
     e.preventDefault();
     setError("");
 
-    let body;
-    try {
-      body = JSON.parse(jsonText);
-    } catch (e) {
-      setError("El JSON no es válido.");
+    const genreTrim = String(movieGenre || "").trim();
+    if (!genreTrim) {
+      setError("movieGenre es obligatorio.");
+      return;
+    }
+    if (genreTrim.length > 30) {
+      setError("movieGenre no puede superar 30 caracteres.");
       return;
     }
 
+    const dto = { movieGenre: genreTrim };
+
     try {
       if (editingId) {
-        if (!body.id) {
-          body.id = editingId;
-        }
-        await updateFilmGenre(body);
+        await updateFilmGenre({ id: editingId, ...dto });
       } else {
-        await createFilmGenre(body);
+        await createFilmGenre(dto);
       }
       await cargarDatos();
-      handleNuevo();
-    } catch (e) {
-      console.error("Error al guardar", e);
-      setError(
-        "No se pudo guardar. Revisa el JSON y que coincida con FilmGenreDTO."
-      );
+      resetForm();
+    } catch (err) {
+      console.error("Error al guardar", err);
+      setError("No se pudo guardar. Revisa que coincida con FilmGenreDTO.");
     }
   };
 
   return (
     <div className={styles.contenedor}>
-      <h1 className={styles.titulo}>Gestión de Géneros de Película</h1>
+      <h1 className={styles.titulo}>Gestión de Géneros</h1>
 
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.grid}>
-        {/* LISTADO */}
         <div className={`${styles.card} ${styles.cardLista}`}>
           <div className={styles.cardHeader}>
             <h2>Registros</h2>
@@ -122,7 +125,7 @@ const AdminFilmGenres = () => {
 
           {loading ? (
             <p>Cargando...</p>
-          ) : genres.length === 0 ? (
+          ) : filmGenres.length === 0 ? (
             <p>No hay registros.</p>
           ) : (
             <table className={styles.tabla}>
@@ -134,11 +137,11 @@ const AdminFilmGenres = () => {
                 </tr>
               </thead>
               <tbody>
-                {genres.map((item) => (
+                {filmGenres.map((item) => (
                   <tr key={item.id}>
                     <td className={styles.td}>{item.id}</td>
                     <td className={styles.td}>
-                      {item.movieGenre || "(sin nombre)"}
+                      {item.movieGenre || "(sin género)"}
                     </td>
                     <td className={styles.td}>
                       <button
@@ -161,25 +164,21 @@ const AdminFilmGenres = () => {
           )}
         </div>
 
-        {/* FORM JSON */}
         <div className={styles.card}>
           <h2>{editingId ? `Editar ID ${editingId}` : "Crear nuevo"}</h2>
-          <p className={styles.descripcion}>
-            Escribe el objeto JSON que coincida con tu{" "}
-            <b>FilmGenreDTO</b>.  
-            Ejemplo:
-          </p>
-          <pre className={styles.descripcion}>
-
-          </pre>
 
           <form onSubmit={handleSubmit}>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              rows={14}
-              className={styles.textarea}
-            />
+            <label className={styles.label}>
+              movieGenre *
+              <input
+                type="text"
+                value={movieGenre}
+                onChange={(e) => setMovieGenre(e.target.value)}
+                className={styles.input}
+                placeholder="Acción"
+                maxLength={30}
+              />
+            </label>
 
             <button
               type="submit"
