@@ -24,6 +24,11 @@ import AdminActors from "./Componentes/adminActors";
 import AdminSex from "./Componentes/adminSex";
 import AdminMembreships from "./Componentes/adminMembreships";
 import AdminFilmGenres from "./Componentes/adminFilmGenres";
+import AdminBills from "./Componentes/adminBills";
+import AdminUsers from "./Componentes/adminUsers";
+import AdminCustomers from "./Componentes/adminCustomers";
+import AdminDirector from "./Componentes/adminDirector";
+import AdminBillMember from "./Componentes/adminBillMember";
 
 
 
@@ -57,6 +62,12 @@ function App() {
           <Route path="admin/adminSex" element={<AdminSex />} />
           <Route path="admin/adminMembreships" element={<AdminMembreships />} />
           <Route path="admin/adminFilmGenres" element={<AdminFilmGenres />} />
+          <Route path="admin/adminBills" element={<AdminBills />} />
+          <Route path="/admin/adminUsers" element={<AdminUsers />} />
+          <Route path="/admin/adminCustomers" element={<AdminCustomers />} />
+          <Route path="/admin/adminDirector" element={<AdminDirector />} />
+          <Route path="/admin/adminBillMember"element={<AdminBillMember />}/>
+
         </Routes>
       </main>
       <Footer />
