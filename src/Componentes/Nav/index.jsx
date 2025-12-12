@@ -80,6 +80,21 @@ function Nav() {
               <Link className={style.dropdownItem} to="/admin/adminFilmGenres">
                 Géneros de Película
               </Link>
+              <Link className={style.dropdownItem} to="/admin/adminBills">
+                Facturas
+              </Link>
+              <Link className={style.dropdownItem} to="/admin/adminUsers">
+                Usuarios
+              </Link>
+              <Link className={style.dropdownItem} to="/admin/adminCustomers">
+                Clientes
+              </Link>
+              <Link className={style.dropdownItem} to="/admin/adminDirector">
+                Directores
+              </Link>
+              <Link className={style.dropdownItem} to="/admin/adminBillMember">
+                Factura-Membresía
+              </Link>
             </div>
           </div>
         )}
